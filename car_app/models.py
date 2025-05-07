@@ -17,30 +17,37 @@ def current_year():
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
-     Represents a user that extends the default Django AbstractUser with additional attributes.
+    Represents a user that extends the default Django AbstractUser with additional attributes.
 
-     :ivar first_name: The first name of the user.
-     :type first_name: str
-     :ivar last_name: The last name of the user.
-     :type last_name: str
-     :ivar email: The email address of the user.
-     :type email: str
-     :ivar password: The hashed password of the user.
-     :type password: str
-     :ivar phone_number: The phone number of the user. Must be unique.
-     :type phone_number: PhoneField
-     :ivar is_customer: Flag to indicate if the user is a customer. Defaults to False.
-     :type is_customer: bool
-     :ivar is_admin: Flag to indicate if the user is an admin/owner. Defaults to False.
-     :type is_admin: bool
-     """
+    This class extends the `AbstractBaseUser` for custom authentication handling and
+    `PermissionsMixin` for adding permissions hierarchy. It is designed to support
+    both customer and administrative roles but enforces they cannot overlap. It
+    includes essential attributes such as email and phone number for identification
+    and contact purposes.
+
+    :ivar first_name: The first name of the user.
+    :type first_name: str
+    :ivar last_name: The last name of the user.
+    :type last_name: str
+    :ivar email: The unique email address of the user, used as the username field.
+    :type email: str
+    :ivar phone_number: The unique phone number of the user.
+    :type phone_number: str
+    :ivar is_customer: Indicates whether the user has a customer role in the system.
+    :type is_customer: bool
+    :ivar is_owner: Indicates whether the user has administrative privileges within
+        the system.
+    :type is_owner: bool
+    :ivar is_staff: Indicates whether the user has staff-level access permissions.
+    :type is_staff: bool
+    """
 
     first_name = CharField(max_length=50, blank=True)
     last_name = CharField(max_length=50, blank=True)
     email = models.EmailField(max_length=255, unique=True)
     phone_number = PhoneField(max_length=255, unique=True)
     is_customer = models.BooleanField(default=False)
-    is_admin = models.BooleanField(default=False)
+    is_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
@@ -50,7 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=~(Q(is_customer=True) & Q(is_admin=True)),
+                check=~(Q(is_customer=True) & Q(is_owner=True)),
                 name='chk_user_not_both_roles'
             )
         ]
@@ -95,23 +102,25 @@ class Customer(models.Model):
 
 class Car(models.Model):
     """
-    Represents a Car entity.
-    :ivar brand: The brand of the car.
-    :type brand: str
-    :ivar model: The model of the car.
-    :type model: str
-    :ivar production_year: The year the car was produced.
-    :type production_year: int
+    Represents a car available for rental.
+
+    :ivar brand: Name of the car's brand.
+    :type brand: CharField
+    :ivar model: Name of the car's model.
+    :type model: CharField
+    :ivar description: A text description of the car.
+    :type description: TextField
+    :ivar production_year: The year the car was produced
+    :type production_year: PositiveIntegerField
     :ivar mileage: The mileage of the car.
-    :type mileage: int
-    :ivar vin: The Vehicle Identification Number (VIN) of the car.
-    :type vin: str
-    :ivar daily_rate: The daily rental rate of the car.
-    :type daily_rate: int
-    :ivar availability: Flag to indicate if the car is available for rent. Defaults to True.
-    :type availability: bool
-    :ivar description: A description of the car.
-    :type description: str
+    :type mileage: PositiveIntegerField
+    :ivar vin: The Vehicle Identification Number of the car.
+    :type vin: CharField
+    :ivar daily_rate: The daily rental rate for the car.
+    :type daily_rate: DecimalField
+    :ivar availability: A boolean flag indicating whether the car is available for
+        rental.
+    :type availability: BooleanField
     """
     brand = models.CharField(max_length=255)
     model = models.CharField(max_length=255)
@@ -130,13 +139,14 @@ class Car(models.Model):
 
 class Accessory(models.Model):
     """
-    Represents an Accessory entity.
+    Represents an accessory available for rental.
+
     :ivar name: The name of the accessory.
-    :type name: str
-    :ivar description: A description of the accessory.
-    :type description: str
-    :ivar daily_rate: The daily rental rate of the accessory.
-    :type daily_rate: int
+    :type name: CharField
+    :ivar description: A detailed description of the accessory.
+    :type description: TextField
+    :ivar daily_rate: The daily rental rate of the accessory in currency units.
+    :type daily_rate: PositiveIntegerField
     """
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -148,23 +158,27 @@ class Accessory(models.Model):
 
 class Rental(models.Model):
     """
-    Represents a Rental entity.
-    :ivar customer: The customer who rented the car.
+    Represents a rental transaction for a car rental service.
+
+    :ivar customer: The customer related to the rental.
     :type customer: Customer
-    :ivar car: The car that was rented.
+    :ivar car: The car being rented.
     :type car: Car
-    :ivar start_date: The start date of the rental.
-    :type start_date: DateField
-    :ivar end_date: The end date of the rental.
-    :type end_date: DateField
+    :ivar start_date: The date on which the rental period begins.
+    :type start_date: date
+    :ivar end_date: The date on which the rental period ends.
+    :type end_date: date
+    :ivar return_date: The actual date the car is returned. Null if not yet returned.
+    :type return_date: date or None
     :ivar total_cost: The total cost of the rental.
-    :type total_cost: int
-    :ivar accessories: The accessories rented with the car.
-    :type accessories: ManyToManyField
-    :ivar status: The status of the rental (e.g., pending, confirmed, completed, cancelled).
+    :type total_cost: Decimal
+    :ivar accessories: The accessories selected for the rental, if any.
+    :type accessories: QuerySet[Accessory]
+    :ivar status: The current status of the rental. Choices include "pending",
+        "confirmed", "completed", and "cancelled".
     :type status: str
-    :ivar created_at: Date when Rental was created
-    :type: DateField
+    :ivar created_at: The timestamp when the rental record is created.
+    :type created_at: datetime
     """
     status_enum = [
         ('pending', 'Pending'),
@@ -188,21 +202,23 @@ class Rental(models.Model):
 
 class Payment(models.Model):
     """
-    Represents a Payment entity.
-    :ivar rental: The rental associated with the payment.
+    This class is used to record and manage details of payments made for rentals.
+
+    :ivar rental: Rental instance associated with the payment.
     :type rental: Rental
-    :ivar amount: The amount paid.
+    :ivar amount: Payment amount.
     :type amount: DecimalField
-    :ivar payment_date: The date of the payment.
+    :ivar payment_date: Date and time when the payment was made.
     :type payment_date: DateTimeField
-    :ivar payment_method: The method of payment (e.g., credit card, cash).
-    :type payment_method: str
+    :ivar status: Status of the payment ('pending', 'completed', 'failed').
+    :type status: CharField
     """
     status_enum = [
         ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('failed', 'Failed')
     ]
+
     rental = models.ForeignKey(Rental, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateTimeField(auto_now_add=True)

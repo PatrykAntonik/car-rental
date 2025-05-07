@@ -2,7 +2,7 @@ from rest_framework import exceptions
 from rest_framework.permissions import BasePermission
 
 
-class CustomIsAdmin(BasePermission):
+class IsOwner(BasePermission):
     """
     Allows access only to users that are marked as admin.
     """

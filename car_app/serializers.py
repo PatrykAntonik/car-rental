@@ -38,7 +38,7 @@ class CarSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = UserSerializer()
 
     class Meta:
         model = Customer
@@ -61,3 +61,11 @@ class RentalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rental
         fields = ['id', 'customer', 'car', 'start_date', 'end_date', 'total_cost']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    rental = RentalSerializer(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = ['id', 'rental', 'amount', 'payment_date']
