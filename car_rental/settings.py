@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_filters',
-    'phone_field'
+    'phone_field',
+    'drf_spectacular',
 
 ]
 
@@ -62,6 +63,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'car_rental.urls'
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
@@ -69,7 +71,17 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Car Rental API',
+    'DESCRIPTION': 'API for car rental service',
+    'VERSION': '1.0.0',
 }
 
 SIMPLE_JWT = {
