@@ -27,8 +27,6 @@ class UserSerializerToken(UserSerializer):
 
 
 class CarSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
     class Meta:
         model = Car
         fields = ['id', 'brand', 'model', 'production_year', 'mileage', 'vin', 'daily_rate', 'availability',

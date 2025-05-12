@@ -29,7 +29,7 @@ urlpatterns = [
     path('api/schema/redoc/', SpectacularRedocView.as_view(), name='redoc'),
 
     path('api/users/', include('car_app.urls.user_urls')),
-    # path('api/cars/', include('car_app.urls.car_urls')),
+    path('api/cars/', include('car_app.urls.car_urls')),
     # path('api/clients/', include('car_app.urls.client_urls')),
     # path('api/owner/', include('car_app.urls.owner_urls')),
     # path('api/rents/', include('car_app.urls.rent_urls')),

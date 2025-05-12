@@ -4,7 +4,6 @@ from car_app.serializers import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from car_app.permissions import IsOwner
 from rest_framework import generics, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -29,49 +28,25 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 @extend_schema(
-    tags=["Authentication"],
-    summary="Obtain auth tokens",
-    description="""
-    Obtain JWT token pair for authentication.
-
-    Provides access and refresh tokens upon successful login.
-    """,
+    summary="Login – obtain JWT",
     request=inline_serializer(
-        name='TokenObtainPairRequest',
+        name="TokenRequest",
         fields={
-            'email': serializers.EmailField(help_text="User's email address"),
-            'password': serializers.CharField(help_text="User's password")
-        }
+            "email": serializers.EmailField(),
+            "password": serializers.CharField(),
+        },
     ),
-
     responses={
-        200: OpenApiResponse(
-            description="Token pair obtained successfully",
-            response=inline_serializer(
-                name='TokenObtainPairResponse',
-                fields={
-                    'access': serializers.CharField(help_text="JWT access token"),
-                    'refresh': serializers.CharField(help_text="JWT refresh token")
-                }
-            )
+        200: inline_serializer(
+            name="TokenResponse",
+            fields={
+                "access": serializers.CharField(),
+                "refresh": serializers.CharField(),
+            },
         ),
-        401: OpenApiResponse(
-            description="Invalid credentials",
-            response=inline_serializer(
-                name='TokenObtainPairError',
-                fields={
-                    'detail': serializers.CharField(),
-                }
-            ),
-            examples=[
-                OpenApiExample(
-                    'Invalid Credentials',
-                    value={'detail': 'No active account found with the given credentials'}
-                ),
-            ]
-        )
+        401: OpenApiResponse(description="Invalid credentials"),
     },
-
+    tags=["Authentication"],
 )
 class MyTokenObtainPairView(TokenObtainPairView):
     """
@@ -81,51 +56,10 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 
 @extend_schema(
-    summary="List all users",
-    description="""
-        Retrieves a list of all users. Only accessible by admin users.
-        Supports filtering, searching, and ordering.
-
-        - Filter by user type (is_customer, is_owner)
-        - Search by name, email, or phone number
-        - Order by user type
-        """,
-    parameters=[
-        OpenApiParameter(
-            name='is_customer',
-            description='Filter by customer status',
-            required=False,
-            type=bool
-        ),
-        OpenApiParameter(
-            name='is_owner',
-            description='Filter by owner status',
-            required=False,
-            type=bool
-        ),
-        OpenApiParameter(
-            name='search',
-            description='Search in first name, last name, email, and phone number',
-            required=False,
-            type=str
-        ),
-        OpenApiParameter(
-            name='ordering',
-            description='Order by is_customer or is_owner (prefix with - for descending)',
-            required=False,
-            type=str,
-            examples=[
-                OpenApiExample(name='Ascending by customer', value='is_customer'),
-                OpenApiExample(name='Descending by owner', value='-is_owner')
-            ]
-        ),
-    ],
-    responses={
-        200: UserSerializer(many=True),
-        401: OpenApiResponse(description="Authentication credentials were not provided"),
-        403: OpenApiResponse(description="Not an admin user")
-    },
-    tags=["User Management"]
+    summary="List users",
+    description="Retrieves a list of all users. Only accessible by admin users. Supports filtering, searching, and ordering.",
+    responses={200: UserSerializer(many=True)},
+    tags=["User Management"],
 )
 class UserListView(generics.ListAPIView):
     """
@@ -288,71 +222,22 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        summary="Change user password",
-        description="""
-        Change the authenticated user's password.
-
-        Requires:
-        - Current password for verification
-        - New password to set
-        """,
+        summary="Change password",
         request=inline_serializer(
-            name='ChangePasswordRequest',
+            name="ChangePasswordRequest",
             fields={
-                'old_password': serializers.CharField(
-                    help_text="Current password"
-                ),
-                'new_password': serializers.CharField(
-                    help_text="New password"
-                ),
-            }
+                "old_password": serializers.CharField(),
+                "new_password": serializers.CharField(),
+            },
         ),
-
         responses={
-            201: OpenApiResponse(
-                description="Password changed successfully",
-                response=inline_serializer(
-                    name='PasswordChangeSuccess',
-                    fields={
-                        'message': serializers.CharField(),
-                    }
-                ),
-                examples=[
-                    OpenApiExample(
-                        'Success',
-                        value={'message': 'Password changed successfully'},
-                    ),
-                ]
+            200: OpenApiResponse(
+                description="Password changed",
+                examples=[OpenApiExample("Success", value={"message": "Password changed successfully"})],
             ),
             400: OpenApiResponse(
                 description="Invalid old password",
-                response=inline_serializer(
-                    name='PasswordChangeError',
-                    fields={
-                        'message': serializers.CharField(),
-                    }
-                ),
-                examples=[
-                    OpenApiExample(
-                        'Invalid Password',
-                        value={'message': 'Invalid password'},
-                    ),
-                ]
-            ),
-            401: OpenApiResponse(
-                description="Authentication credentials were not provided",
-                response=inline_serializer(
-                    name='Unauthorized',
-                    fields={
-                        'detail': serializers.CharField(),
-                    }
-                ),
-                examples=[
-                    OpenApiExample(
-                        'Unauthorized',
-                        value={'detail': 'Authentication credentials were not provided.'},
-                    ),
-                ]
+                examples=[OpenApiExample("Invalid", value={"message": "Invalid password"})],
             ),
         },
     )
@@ -380,55 +265,7 @@ class UserDetailView(APIView):
 
     @extend_schema(
         summary="Get user details",
-        description="""
-        Retrieves detailed information about a specific user. Accessible only by admin users.
-        - Requires user ID in the URL path."""
-        ,
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                location='path',
-                description='User ID',
-                required=True,
-                type=int
-            )
-        ],
-        responses={
-            200: OpenApiResponse(
-                response=UserSerializer,
-                description="User details retrieved successfully"
-            ),
-            404: OpenApiResponse(
-                description="User not found",
-                response=inline_serializer(
-                    name='UserNotFoundError',
-                    fields={
-                        'detail': serializers.CharField(),
-                    }
-                ),
-                examples=[
-                    OpenApiExample(
-                        'Not Found',
-                        value={'detail': 'Not found.'},
-                    ),
-                ]
-            ),
-            403: OpenApiResponse(
-                description="Permission denied - Admin access required",
-                response=inline_serializer(
-                    name='PermissionDenied',
-                    fields={
-                        'detail': serializers.CharField(),
-                    }
-                ),
-                examples=[
-                    OpenApiExample(
-                        'Forbidden',
-                        value={'detail': 'You do not have permission to perform this action.'},
-                    ),
-                ]
-            ),
-        },
+        responses={200: UserSerializer},
     )
     def get(self, request, pk):
         user = get_object_or_404(User, pk=pk)
@@ -439,7 +276,6 @@ class UserDetailView(APIView):
 @extend_schema(tags=['Authentication'])
 class RegisterUser(APIView):
     """
-
     User
     registration
     view.
@@ -447,68 +283,29 @@ class RegisterUser(APIView):
 
     @extend_schema(
         summary="Register a new user",
-        description="""
-    Creates
-    a
-    new
-    user as either
-    a
-    customer or an
-    owner.
-    - Only
-    one
-    role
-    can
-    be
-    selected
-    at
-    a
-    time.
-    """,
         request=inline_serializer(
-            name='UserRegistration',
+            name="UserRegistration",
             fields={
-                'first_name': serializers.CharField(required=False),
-                'last_name': serializers.CharField(required=False),
-                'email': serializers.EmailField(required=True),
-                'phone_number': serializers.CharField(required=True),
-                'password': serializers.CharField(required=True, write_only=True),
-                'is_customer': serializers.BooleanField(default=False),
-                'is_owner': serializers.BooleanField(default=False),
-            }
+                "first_name": serializers.CharField(required=False),
+                "last_name": serializers.CharField(required=False),
+                "email": serializers.EmailField(),
+                "phone_number": serializers.CharField(),
+                "password": serializers.CharField(write_only=True),
+                "is_customer": serializers.BooleanField(default=False),
+                "is_owner": serializers.BooleanField(default=False),
+            },
         ),
-
         responses={
-            201: OpenApiResponse(
-                response=UserSerializer,
-                description="User created successfully"
-            ),
+            201: UserSerializer,
             400: OpenApiResponse(
-                description="Bad Request",
-                response=inline_serializer(
-                    name='RegistrationError',
-                    fields={
-                        'message': serializers.CharField(),
-                    }
-                ),
+                description="Validation / integrity error",
                 examples=[
-                    OpenApiExample(
-                        'Both roles set',
-                        value={'message': 'User cannot be both customer and owner'},
-                    ),
-                    OpenApiExample(
-                        'Email duplicate',
-                        value={'message': 'Email already registered'},
-                    ),
-                    OpenApiExample(
-                        'Phone duplicate',
-                        value={'message': 'Phone number already registered'},
-                    ),
-                ]
+                    OpenApiExample("Both roles set", value={"message": "User cannot be both customer and owner"}),
+                    OpenApiExample("Email duplicate", value={"message": "Email already registered"}),
+                    OpenApiExample("Phone duplicate", value={"message": "Phone number already registered"}),
+                ],
             ),
-
         },
-        tags=["Authentication"],
     )
     def post(self, request):
         data = request.data
