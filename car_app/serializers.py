@@ -65,3 +65,13 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['id', 'rental', 'amount', 'payment_date']
+
+
+class CustomerRegistrationDocSerializer(CustomerSerializer):
+    """
+    Doc-only serializer to show schema correctly
+    """
+    user = UserSerializer()
+
+    class Meta(CustomerSerializer.Meta):
+        read_only_fields = []

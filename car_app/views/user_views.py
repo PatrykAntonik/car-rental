@@ -1,13 +1,15 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from car_app.permissions import IsOwner
 from car_app.serializers import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework import generics, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from django.shortcuts import get_object_or_404
@@ -348,3 +350,5 @@ class RegisterUser(APIView):
             )
         serializer = UserSerializer(user, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
