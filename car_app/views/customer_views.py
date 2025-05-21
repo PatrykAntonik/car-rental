@@ -1,4 +1,5 @@
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 from car_app.permissions import IsOwner
 from car_app.serializers import *
@@ -8,16 +9,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse
 from django.shortcuts import get_object_or_404
 
+from docs.customer_views_docs import *
 
-@extend_schema(
-    tags=['Authentication'],
-    summary="Register a new customer (User + Customer profile)",
-    request=CustomerRegistrationDocSerializer,
-    responses={201: CustomerSerializer},
-)
+
+@REGISTER_CUSTOMER_SCHEMA
 class RegisterCustomer(APIView):
     """
     Customer registration view.
@@ -53,16 +50,16 @@ class RegisterCustomer(APIView):
         except IntegrityError as e:
             if 'email' in str(e):
                 return Response(
-                    {'message': 'Email already registered'},
+                    {'message': EMAIL_ALREADY_REGISTERED},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if 'phone_number' in str(e):
                 return Response(
-                    {'message': 'Phone number already registered'},
+                    {'message': PHONE_ALREADY_REGISTERED},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             return Response(
-                {'message': 'Registration failed'},
+                {'message': REGISTRATION_FAILURE},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except ValidationError as e:
@@ -74,12 +71,7 @@ class RegisterCustomer(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(
-    summary="List customers",
-    description="Retrieves a list of all customers. Only accessible by users with Owner role. Supports filtering, searching, and ordering.",
-    responses={200: CustomerSerializer(many=True)},
-    tags=["Customers"],
-)
+@LIST_CUSTOMERS_SCHEMA
 class CustomerListView(generics.ListAPIView):
     """
     Retrieves a list of customers.
@@ -94,66 +86,26 @@ class CustomerListView(generics.ListAPIView):
     ordering_fields = ['licence_since', 'date_of_birth']
 
 
-@extend_schema(tags=["Customers"])
+@CUSTOMER_PROFILE_SCHEMA
 class CustomerProfileView(APIView):
     """
     Customer profile view.
     """
     permission_classes = [IsAuthenticated]
 
-    # ---------- GET ----------
-    @extend_schema(
-        summary="Get customer profile",
-        responses={
-            200: CustomerSerializer,
-            404: OpenApiResponse(
-                description="Customer profile not found",
-                response=inline_serializer(
-                    name="CustomerNotFound",
-                    fields={"message": serializers.CharField()},
-                ),
-                examples=[
-                    OpenApiExample("Not Found", value={"message": "Customer profile not found"}),
-                ],
-            ),
-        },
-    )
     def get(self, request):
-        """
-        """
         try:
             customer = request.user.customer
         except Customer.DoesNotExist:
-            return Response({"message": "Customer profile not found"}, status=404)
+            return Response({"message": CUSTOMER_NOT_FOUND}, status=404)
 
         return Response(CustomerSerializer(customer).data)
 
-    @extend_schema(
-        summary="Update customer profile",
-        request=inline_serializer(
-            name="UpdateCustomerProfile",
-            fields={
-                "date_of_birth": serializers.DateField(required=False),
-                "licence_since": serializers.DateField(required=False),
-                "licence_expiry_date": serializers.DateField(required=False),
-                "address": serializers.CharField(required=False),
-                "city": serializers.CharField(required=False),
-                "country": serializers.CharField(required=False),
-                "citizenship": serializers.CharField(required=False),
-            },
-        ),
-        responses={
-            200: CustomerSerializer,
-            404: OpenApiResponse(description="Customer profile not found"),
-        },
-    )
     def put(self, request):
-        """
-        """
         try:
             customer = request.user.customer
         except Customer.DoesNotExist:
-            return Response({"message": "Customer profile not found"}, status=404)
+            return Response({"message": CUSTOMER_NOT_FOUND}, status=404)
 
         data = request.data
         for field in (
@@ -169,14 +121,10 @@ class CustomerProfileView(APIView):
                 setattr(customer, field, data[field])
 
         customer.save()
-        return Response(CustomerSerializer(customer).data, status=200)
+        return Response(CustomerSerializer(customer).data, status=HTTP_200_OK)
 
 
-@extend_schema(
-    tags=["Customers"],
-    summary="List of rentals for an authenticated customer.",
-    responses={200: None}
-)
+@LIST_CUSTOMER_RENTALS
 class CustomerRentalListView(APIView):
     """
     """
@@ -187,7 +135,7 @@ class CustomerRentalListView(APIView):
             customer = request.user.customer
         except Customer.DoesNotExist:
             return Response(
-                {"message": "Customer profile not found"},
+                {"message": CUSTOMER_NOT_FOUND},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -204,25 +152,20 @@ class CustomerRentalListView(APIView):
             if pay:
                 rent_data["payment"] = PaymentSerializer(pay).data
             else:
-                rent_data["payment"] = {"message": "Payment not found"}
+                rent_data["payment"] = {"message": PAYMENT_NOT_FOUND}
 
             result.append(rent_data)
 
         return Response(result, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=['Customers'])
+@CUSTOMER_DETAIL_SCHEMA
 class CustomerDetailView(APIView):
     """
     Retrieves customer details for admin.
     """
-
     permission_classes = [IsAdminUser]
 
-    @extend_schema(
-        summary="Get customer details",
-        responses={200: CustomerSerializer},
-    )
     def get(self, request, pk):
         customer = get_object_or_404(Customer, pk=pk)
         serializer = CustomerSerializer(customer, many=False)

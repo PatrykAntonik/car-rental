@@ -1,6 +1,4 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer, OpenApiResponse, \
-    extend_schema_view
 from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
@@ -13,12 +11,10 @@ from rest_framework import generics
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
+from docs.car_views_docs import CAR_DETAIL_SCHEMA, LIST_CARS_SCHEMA
 
-@extend_schema(
-    summary="List cars",
-    description="List all cars with filter, search and ordering.",
-    tags=["Car Management"],
-)
+
+@LIST_CARS_SCHEMA
 class CarListView(generics.ListAPIView):
     """
     Gets a list of all cars.
@@ -32,31 +28,7 @@ class CarListView(generics.ListAPIView):
     ordering = ['-production_year']
 
 
-@extend_schema_view(
-    get=extend_schema(
-        summary="Get car details",
-        responses={200: CarSerializer},
-        tags=["Car Management"],
-    ),
-    put=extend_schema(
-        summary="Update car details",
-        request=CarSerializer,
-        responses={
-            200: CarSerializer,
-            400: OpenApiResponse(description="Validation error"),
-            403: OpenApiResponse(description="Not owner"),
-        },
-        tags=["Car Management"],
-    ),
-    delete=extend_schema(
-        summary="Delete car",
-        responses={
-            204: OpenApiResponse(description="Deleted"),
-            403: OpenApiResponse(description="Not owner"),
-        },
-        tags=["Car Management"],
-    ),
-)
+@CAR_DETAIL_SCHEMA
 class CarDetailView(APIView):
     """
     Car detail view to retrieve, update, or delete a specific car.
