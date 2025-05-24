@@ -6,14 +6,11 @@ class IsOwner(BasePermission):
     """
     Allows access only to users that are marked as admin.
     """
-    message = "Access restricted to employers only."
+    message = "Access restricted to owners only."
 
     def has_permission(self, request, view):
-        if (
-                request.user and
-                request.user.is_authenticated and
-                request.user.is_employer
-        ):
-            return True
-
-        raise exceptions.PermissionDenied(self.message)
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, "is_owner", False)
+        )

@@ -1,5 +1,3 @@
-import datetime
-
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import AbstractUser, PermissionsMixin, AbstractBaseUser
 from .managers import CustomUserManager
@@ -99,6 +97,9 @@ class Customer(models.Model):
     country = models.CharField(max_length=255)
     citizenship = models.CharField(max_length=255)
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}" if self.user else "Customer without user"
+
 
 class Car(models.Model):
     """
@@ -137,25 +138,6 @@ class Car(models.Model):
         return self.brand + " " + self.model
 
 
-class Accessory(models.Model):
-    """
-    Represents an accessory available for rental.
-
-    :ivar name: The name of the accessory.
-    :type name: CharField
-    :ivar description: A detailed description of the accessory.
-    :type description: TextField
-    :ivar daily_rate: The daily rental rate of the accessory in currency units.
-    :type daily_rate: PositiveIntegerField
-    """
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    daily_rate = models.PositiveIntegerField()
-
-    def __str__(self):
-        return self.name
-
-
 class Rental(models.Model):
     """
     Represents a rental transaction for a car rental service.
@@ -172,8 +154,6 @@ class Rental(models.Model):
     :type return_date: date or None
     :ivar total_cost: The total cost of the rental.
     :type total_cost: Decimal
-    :ivar accessories: The accessories selected for the rental, if any.
-    :type accessories: QuerySet[Accessory]
     :ivar status: The current status of the rental. Choices include "pending",
         "confirmed", "completed", and "cancelled".
     :type status: str
@@ -183,7 +163,6 @@ class Rental(models.Model):
     status_enum = [
         ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
-        ('completed', 'Completed'),
         ('cancelled', 'Cancelled')
     ]
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -192,7 +171,6 @@ class Rental(models.Model):
     end_date = models.DateField()
     return_date = models.DateField(null=True, blank=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    accessories = models.ManyToManyField(Accessory, blank=True)
     status = models.CharField(max_length=50, choices=status_enum, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -219,7 +197,7 @@ class Payment(models.Model):
         ('failed', 'Failed')
     ]
 
-    rental = models.ForeignKey(Rental, on_delete=models.CASCADE)
+    rental = models.OneToOneField(Rental, on_delete=models.CASCADE, related_name='payment')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, choices=status_enum, default='pending')

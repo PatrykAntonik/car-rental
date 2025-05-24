@@ -5,7 +5,7 @@ from docs.user_views_docs import LOGIN_SCHEMA, USER_LIST_SCHEMA, USER_PROFILE_SC
 from car_app.serializers import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework import generics, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -52,49 +52,85 @@ class UserListView(generics.ListAPIView):
     ordering_fields = ['is_customer', 'is_owner']
 
 
+# @USER_PROFILE_SCHEMA
+# class UserProfileView(APIView):
+#     """
+#     User profile view for authenticated users.
+#     """
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request):
+#         try:
+#             user = request.user
+#             serializer = UserSerializer(user, many=False)
+#             return Response(serializer.data)
+#         except User.DoesNotExist:
+#             return Response({'message': USER_NOT_FOUND}, status=404)
+#
+#     def put(self, request):
+#         user = request.user
+#         data = request.data
+#         user.first_name = data.get('first_name', user.first_name)
+#         user.last_name = data.get('last_name', user.last_name)
+#         user.email = data.get('email', user.email)
+#         user.phone_number = data.get('phone_number', user.phone_number)
+#
+#         try:
+#             user.save()
+#         except Exception as e:
+#             if 'UNIQUE constraint failed: car_app_user.email' in str(e):
+#                 return Response({'message': EMAIL_ALREADY_REGISTERED}, status=400)
+#             elif 'UNIQUE constraint failed: car_app_user.phone_number' in str(e):
+#                 return Response({'message': PHONE_ALREADY_REGISTERED}, status=400)
+#             else:
+#                 return Response({'message': str(e)}, status=400)
+#
+#         serializer = UserSerializer(user, many=False)
+#         return Response(serializer.data, status=201)
+#
+#     def delete(self, request):
+#         user = request.user
+#         old_password = request.data.get('password')
+#         if not user.check_password(old_password):
+#             return Response({'message': INVALID_PASSWORD}, status=400)
+#         user.delete()
+#         return Response(status=204)
+#
 @USER_PROFILE_SCHEMA
-class UserProfileView(APIView):
+class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
     User profile view for authenticated users.
     """
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    queryset = User.objects.none()
 
-    def get(self, request):
-        try:
-            user = request.user
-            serializer = UserSerializer(user, many=False)
-            return Response(serializer.data)
-        except User.DoesNotExist:
-            return Response({'message': USER_NOT_FOUND}, status=404)
+    def get_object(self):
+        return self.request.user
 
-    def put(self, request):
-        user = request.user
-        data = request.data
-        user.first_name = data.get('first_name', user.first_name)
-        user.last_name = data.get('last_name', user.last_name)
-        user.email = data.get('email', user.email)
-        user.phone_number = data.get('phone_number', user.phone_number)
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            self.get_object(), data=request.data, partial=False
+        )
+        serializer.is_valid(raise_exception=True)
 
         try:
-            user.save()
-        except Exception as e:
-            if 'UNIQUE constraint failed: car_app_user.email' in str(e):
-                return Response({'message': EMAIL_ALREADY_REGISTERED}, status=400)
-            elif 'UNIQUE constraint failed: car_app_user.phone_number' in str(e):
-                return Response({'message': PHONE_ALREADY_REGISTERED}, status=400)
-            else:
-                return Response({'message': str(e)}, status=400)
+            self.perform_update(serializer)
+        except IntegrityError as e:
+            if "email" in str(e):
+                return Response({"message": EMAIL_ALREADY_REGISTERED}, status=400)
+            if "phone_number" in str(e):
+                return Response({"message": PHONE_ALREADY_REGISTERED}, status=400)
+            return Response({"message": str(e)}, status=400)
 
-        serializer = UserSerializer(user, many=False)
-        return Response(serializer.data, status=201)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request):
-        user = request.user
-        old_password = request.data.get('password')
-        if not user.check_password(old_password):
-            return Response({'message': INVALID_PASSWORD}, status=400)
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        if not user.check_password(request.data.get("password")):
+            return Response({"message": INVALID_PASSWORD}, status=400)
         user.delete()
-        return Response(status=204)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @UPDATE_PASSWORD_SCHEMA
@@ -119,17 +155,14 @@ class ChangePasswordView(APIView):
 
 
 @USER_DETAIL_SCHEMA
-class UserDetailView(APIView):
+class UserDetailView(generics.RetrieveAPIView):
     """
     Retrieves user details for admin.
     """
 
     permission_classes = [IsAdminUser]
-
-    def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(user, many=False)
-        return Response(serializer.data)
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
 
 @REGISTER_USER_SCHEMA
@@ -139,6 +172,7 @@ class RegisterUser(APIView):
     registration
     view.
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data

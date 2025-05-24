@@ -1,3 +1,4 @@
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
@@ -9,8 +10,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
-
 from docs.customer_views_docs import *
 
 
@@ -19,6 +18,7 @@ class RegisterCustomer(APIView):
     """
     Customer registration view.
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data
@@ -87,86 +87,28 @@ class CustomerListView(generics.ListAPIView):
 
 
 @CUSTOMER_PROFILE_SCHEMA
-class CustomerProfileView(APIView):
+class CustomerProfileView(generics.RetrieveUpdateAPIView):
     """
-    Customer profile view.
     """
+    serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get_object(self):
         try:
-            customer = request.user.customer
+            return self.request.user.customer
         except Customer.DoesNotExist:
-            return Response({"message": CUSTOMER_NOT_FOUND}, status=404)
+            raise NotFound({"message": CUSTOMER_NOT_FOUND})
 
-        return Response(CustomerSerializer(customer).data)
-
-    def put(self, request):
-        try:
-            customer = request.user.customer
-        except Customer.DoesNotExist:
-            return Response({"message": CUSTOMER_NOT_FOUND}, status=404)
-
-        data = request.data
-        for field in (
-                "date_of_birth",
-                "licence_since",
-                "licence_expiry_date",
-                "address",
-                "city",
-                "country",
-                "citizenship",
-        ):
-            if field in data:
-                setattr(customer, field, data[field])
-
-        customer.save()
-        return Response(CustomerSerializer(customer).data, status=HTTP_200_OK)
-
-
-@LIST_CUSTOMER_RENTALS
-class CustomerRentalListView(APIView):
-    """
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            customer = request.user.customer
-        except Customer.DoesNotExist:
-            return Response(
-                {"message": CUSTOMER_NOT_FOUND},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        rentals = (
-            Rental.objects
-            .filter(customer=customer)
-            .select_related("car")
-        )
-
-        result = []
-        for rent in rentals:
-            rent_data = RentalSerializer(rent).data
-            pay = Payment.objects.filter(rental=rent).first()
-            if pay:
-                rent_data["payment"] = PaymentSerializer(pay).data
-            else:
-                rent_data["payment"] = {"message": PAYMENT_NOT_FOUND}
-
-            result.append(rent_data)
-
-        return Response(result, status=status.HTTP_200_OK)
+    def update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)
 
 
 @CUSTOMER_DETAIL_SCHEMA
-class CustomerDetailView(APIView):
+class CustomerDetailView(generics.RetrieveAPIView):
     """
     Retrieves customer details for admin.
     """
+    queryset = Customer.objects.select_related("user")
+    serializer_class = CustomerSerializer
     permission_classes = [IsAdminUser]
-
-    def get(self, request, pk):
-        customer = get_object_or_404(Customer, pk=pk)
-        serializer = CustomerSerializer(customer, many=False)
-        return Response(serializer.data)

@@ -80,13 +80,27 @@ CUSTOMER_PROFILE_SCHEMA = extend_schema_view(
             404: OpenApiResponse(description="Customer profile not found"),
         },
         tags=["Customers"]
-    )
-)
-
-LIST_CUSTOMER_RENTALS = extend_schema(
-    tags=["Customers"],
-    summary="List of rentals for an authenticated customer.",
-    responses={200: None}
+    ),
+    patch=extend_schema(
+        summary="Partially update customer profile",
+        request=inline_serializer(
+            name="PartialUpdateCustomerProfile",
+            fields={
+                "date_of_birth": serializers.DateField(required=False),
+                "licence_since": serializers.DateField(required=False),
+                "licence_expiry_date": serializers.DateField(required=False),
+                "address": serializers.CharField(required=False),
+                "city": serializers.CharField(required=False),
+                "country": serializers.CharField(required=False),
+                "citizenship": serializers.CharField(required=False),
+            },
+        ),
+        responses={
+            200: CustomerSerializer,
+            404: OpenApiResponse(description="Customer profile not found"),
+        },
+        tags=["Customers"]
+    ),
 )
 
 CUSTOMER_DETAIL_SCHEMA = extend_schema(

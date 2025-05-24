@@ -103,6 +103,34 @@ USER_PROFILE_SCHEMA = extend_schema_view(
         },
         tags=["User Management"],
     ),
+    patch=extend_schema(
+        summary="Update user profile partially",
+        description="Partially update the profile information of the authenticated user.",
+        request=inline_serializer(
+            name="PartialUpdateUserProfile",
+            fields={
+                "first_name": serializers.CharField(required=False, help_text="User's first name"),
+                "last_name": serializers.CharField(required=False, help_text="User's last name"),
+                "email": serializers.EmailField(required=False, help_text="User's email address"),
+                "phone_number": serializers.CharField(required=False, help_text="User's phone number"),
+            },
+        ),
+        responses={
+            200: UserSerializer,
+            400: OpenApiResponse(
+                description="Bad request",
+                response=inline_serializer(
+                    name="PartialUpdateError",
+                    fields={"message": serializers.CharField()},
+                ),
+                examples=[
+                    OpenApiExample("Email Taken", value={"message": EMAIL_ALREADY_REGISTERED}),
+                    OpenApiExample("Phone Taken", value={"message": PHONE_ALREADY_REGISTERED}),
+                ],
+            ),
+        },
+        tags=["User Management"],
+    ),
 )
 
 UPDATE_PASSWORD_SCHEMA = extend_schema(

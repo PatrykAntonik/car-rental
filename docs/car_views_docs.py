@@ -32,4 +32,14 @@ CAR_DETAIL_SCHEMA = extend_schema_view(
         },
         tags=["Car Management"],
     ),
+    patch=extend_schema(
+        summary="Partially update car details",
+        request=CarSerializer,
+        responses={
+            200: CarSerializer,
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Not owner"),
+        },
+        tags=["Car Management"],
+    ),
 )

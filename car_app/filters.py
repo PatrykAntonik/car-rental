@@ -4,7 +4,6 @@ from car_app.models import *
 
 class CarFilter(filters.FilterSet):
     brand = filters.MultipleChoiceFilter(
-        choices=Car.objects.values_list('brand', 'brand').distinct(),
         lookup_expr='in'
     )
     daily_rate_min = filters.NumberFilter(field_name="daily_rate", lookup_expr='gte')
@@ -20,3 +19,13 @@ class CarFilter(filters.FilterSet):
             'model': ['exact', 'icontains'],
             'availability': ['exact'],
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        brands = (Car.objects
+                  .values_list('brand', flat=True)
+                  .distinct()
+                  .order_by('brand'))
+
+        self.filters['brand'].extra['choices'] = [(b, b) for b in brands]

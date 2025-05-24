@@ -5,7 +5,6 @@ admin.site.register([
     User,
     Customer,
     Car,
-    Accessory,
     Rental,
     Payment
 ])
