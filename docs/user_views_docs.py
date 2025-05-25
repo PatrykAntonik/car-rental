@@ -61,7 +61,6 @@ USER_PROFILE_SCHEMA = extend_schema_view(
                 "first_name": serializers.CharField(required=False, help_text="User's first name"),
                 "last_name": serializers.CharField(required=False, help_text="User's last name"),
                 "email": serializers.EmailField(required=False, help_text="User's email address"),
-                "phone_number": serializers.CharField(required=False, help_text="User's phone number"),
             },
         ),
         responses={
@@ -74,7 +73,6 @@ USER_PROFILE_SCHEMA = extend_schema_view(
                 ),
                 examples=[
                     OpenApiExample("Email Taken", value={"message": EMAIL_ALREADY_REGISTERED}),
-                    OpenApiExample("Phone Taken", value={"message": PHONE_ALREADY_REGISTERED}),
                 ],
             ),
         },
@@ -112,7 +110,6 @@ USER_PROFILE_SCHEMA = extend_schema_view(
                 "first_name": serializers.CharField(required=False, help_text="User's first name"),
                 "last_name": serializers.CharField(required=False, help_text="User's last name"),
                 "email": serializers.EmailField(required=False, help_text="User's email address"),
-                "phone_number": serializers.CharField(required=False, help_text="User's phone number"),
             },
         ),
         responses={
@@ -125,7 +122,6 @@ USER_PROFILE_SCHEMA = extend_schema_view(
                 ),
                 examples=[
                     OpenApiExample("Email Taken", value={"message": EMAIL_ALREADY_REGISTERED}),
-                    OpenApiExample("Phone Taken", value={"message": PHONE_ALREADY_REGISTERED}),
                 ],
             ),
         },
@@ -170,7 +166,6 @@ REGISTER_USER_SCHEMA = extend_schema(
             "first_name": serializers.CharField(required=False),
             "last_name": serializers.CharField(required=False),
             "email": serializers.EmailField(),
-            "phone_number": serializers.CharField(),
             "password": serializers.CharField(write_only=True),
             "is_owner": serializers.BooleanField(default=False),
         },
@@ -182,7 +177,6 @@ REGISTER_USER_SCHEMA = extend_schema(
             examples=[
                 OpenApiExample("Both roles set", value={"message": DUPLICATE_ROLE}),
                 OpenApiExample("Email duplicate", value={"message": EMAIL_ALREADY_REGISTERED}),
-                OpenApiExample("Phone duplicate", value={"message": PHONE_ALREADY_REGISTERED}),
             ],
         ),
     },

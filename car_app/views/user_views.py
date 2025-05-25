@@ -49,7 +49,7 @@ class UserListView(generics.ListAPIView):
     permission_classes = [IsAdminUser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['is_owner']
-    search_fields = ['first_name', 'last_name', 'email', 'phone_number']
+    search_fields = ['first_name', 'last_name', 'email']
     ordering_fields = ['is_owner']
 
 
@@ -67,7 +67,7 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(
-            self.get_object(), data=request.data, partial=False
+            self.get_object(), data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
 
@@ -76,8 +76,6 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
         except IntegrityError as e:
             if "email" in str(e):
                 return Response({"message": EMAIL_ALREADY_REGISTERED}, status=400)
-            if "phone_number" in str(e):
-                return Response({"message": PHONE_ALREADY_REGISTERED}, status=400)
             return Response({"message": str(e)}, status=400)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -139,7 +137,6 @@ class RegisterUser(APIView):
                 first_name=data.get('first_name', ''),
                 last_name=data.get('last_name', ''),
                 email=data.get('email', ''),
-                phone_number=data.get('phone_number', ''),
                 password=data.get('password', ''),
                 is_owner=is_owner,
             )
@@ -147,11 +144,6 @@ class RegisterUser(APIView):
             if 'email' in str(e):
                 return Response(
                     {'message': EMAIL_ALREADY_REGISTERED},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if 'phone_number' in str(e):
-                return Response(
-                    {'message': 'Phone number already registered'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             return Response(
@@ -189,8 +181,8 @@ class GoogleAuthView(APIView):
             return Response({"detail": "Invalid token"}, status=400)
 
         email = info.get("email")
-        first_name = info.get("given_name", "")
-        last_name = info.get("family_name", "")
+        first_name = info.get("given_name", "first_name")
+        last_name = info.get("family_name", "last_name")
 
         if not email:
             return Response({"detail": "Email scope missing"}, status=400)
@@ -208,4 +200,3 @@ class GoogleAuthView(APIView):
             {"access": str(refresh.access_token), "refresh": str(refresh)},
             status=status.HTTP_201_CREATED,
         )
-

@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     'django_filters',
     'phone_field',
     'drf_spectacular',
-    "django.contrib.sites",
     'rest_framework.authtoken'
 ]
 

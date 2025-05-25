@@ -26,7 +26,6 @@ class RegisterCustomer(APIView):
             "first_name": data.get("first_name", ""),
             "last_name": data.get("last_name", ""),
             "email": data.get("email", ""),
-            "phone_number": data.get("phone_number", ""),
             "password": data.get("password", ""),
             "is_owner": False,
         }
@@ -38,6 +37,7 @@ class RegisterCustomer(APIView):
             "city": data.get("city"),
             "country": data.get("country"),
             "citizenship": data.get("citizenship"),
+            "phone_number": data.get("phone_number", ""),
         }
 
         try:
@@ -80,7 +80,7 @@ class CustomerListView(generics.ListAPIView):
     permission_classes = [IsOwner]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['city', 'country', 'citizenship']
-    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'user__phone_number']
+    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone_number']
     ordering_fields = ['licence_since', 'date_of_birth']
 
 

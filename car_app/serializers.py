@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'is_owner']
+        fields = ['id', 'first_name', 'last_name', 'email', 'is_owner']
 
 
 class UserSerializerToken(UserSerializer):
@@ -39,7 +39,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ['id', 'user', 'date_of_birth', 'licence_expiry_date', 'licence_since', 'address', 'city',
-                  'country', 'citizenship']
+                  'country', 'citizenship', 'phone_number']
 
 
 class RentalSerializer(serializers.ModelSerializer):

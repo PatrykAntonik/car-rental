@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from car_app.messages import *
-from car_app.permissions import IsOwner
+from car_app.permissions import IsOwner, IsCustomer
 from car_app.serializers import *
 from docs.rental_views_docs import LIST_CUSTOMER_RENTALS, CREATE_RENTAL_SCHEMA, RENTAL_DETAIL_SCHEMA, RENTAL_LIST_SCHEMA
 
@@ -15,7 +15,7 @@ class CustomerRentalListView(APIView):
     """
     List all rentals for the authenticated customer.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomer]
 
     def get(self, request):
         try:
@@ -73,7 +73,7 @@ class RentalCreateView(generics.GenericAPIView):
     """
     Rental creation view for customers to book a car.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = RentalSerializer
 
     def post(self, request):

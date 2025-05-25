@@ -29,8 +29,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     :type last_name: str
     :ivar email: The unique email address of the user, used as the username field.
     :type email: str
-    :ivar phone_number: The unique phone number of the user.
-    :type phone_number: str
     :ivar is_owner: Indicates whether the user has administrative privileges within
         the system.
     :type is_owner: bool
@@ -41,7 +39,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = CharField(max_length=50, blank=True)
     last_name = CharField(max_length=50, blank=True)
     email = models.EmailField(max_length=255, unique=True)
-    phone_number = PhoneField(max_length=255, unique=True)
     is_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
@@ -76,6 +73,8 @@ class Customer(models.Model):
     :type country: str
     :ivar citizenship: The citizenship of the customer.
     :type citizenship: str
+    :ivar phone_number: The unique phone number of the user.
+    :type phone_number: str
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     date_of_birth = models.DateField()
@@ -85,6 +84,7 @@ class Customer(models.Model):
     city = models.CharField(max_length=255)
     country = models.CharField(max_length=255)
     citizenship = models.CharField(max_length=255)
+    phone_number = PhoneField(max_length=255, unique=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}" if self.user else "Customer without user"
