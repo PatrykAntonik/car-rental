@@ -31,8 +31,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     :type email: str
     :ivar phone_number: The unique phone number of the user.
     :type phone_number: str
-    :ivar is_customer: Indicates whether the user has a customer role in the system.
-    :type is_customer: bool
     :ivar is_owner: Indicates whether the user has administrative privileges within
         the system.
     :type is_owner: bool
@@ -44,21 +42,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = CharField(max_length=50, blank=True)
     email = models.EmailField(max_length=255, unique=True)
     phone_number = PhoneField(max_length=255, unique=True)
-    is_customer = models.BooleanField(default=False)
     is_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
     objects = CustomUserManager()
-
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=~(Q(is_customer=True) & Q(is_owner=True)),
-                name='chk_user_not_both_roles'
-            )
-        ]
 
     def __str__(self):
         if self.first_name and self.last_name:

@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'is_customer', 'is_owner']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'is_owner']
 
 
 class UserSerializerToken(UserSerializer):
@@ -34,7 +34,7 @@ class CarSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Customer

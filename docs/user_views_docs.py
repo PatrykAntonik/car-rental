@@ -172,7 +172,6 @@ REGISTER_USER_SCHEMA = extend_schema(
             "email": serializers.EmailField(),
             "phone_number": serializers.CharField(),
             "password": serializers.CharField(write_only=True),
-            "is_customer": serializers.BooleanField(default=False),
             "is_owner": serializers.BooleanField(default=False),
         },
     ),
@@ -187,4 +186,37 @@ REGISTER_USER_SCHEMA = extend_schema(
             ],
         ),
     },
+)
+
+
+class GoogleTokenSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        help_text="ID token returned by Google Sign-In"
+    )
+
+
+TokenPairSerializer = inline_serializer(
+    name="TokenPair",
+    fields={
+        "access": serializers.CharField(),
+        "refresh": serializers.CharField(),
+    },
+)
+
+GOOGLE_AUTH_SCHEMA = extend_schema(
+    tags=["Authentication"],
+    summary="Google authentication",
+    request=GoogleTokenSerializer,
+    responses={
+        200: TokenPairSerializer,
+        400: OpenApiResponse(
+            description="Invalid Google token",
+            response=inline_serializer(
+                name="GoogleAuthError",
+                fields={"detail": serializers.CharField()},
+            ),
+            examples=[OpenApiExample("Invalid Token", value={"detail": "Invalid Google token"})],
+        ),
+    },
+    description="Authenticate a user using Google Sign-In or One-Tap. Requires an ID token from Google.",
 )

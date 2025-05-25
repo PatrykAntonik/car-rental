@@ -1,6 +1,5 @@
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 from car_app.permissions import IsOwner
 from car_app.serializers import *
@@ -29,7 +28,6 @@ class RegisterCustomer(APIView):
             "email": data.get("email", ""),
             "phone_number": data.get("phone_number", ""),
             "password": data.get("password", ""),
-            "is_customer": True,  # na stałe
             "is_owner": False,
         }
         customer_data = {
@@ -102,6 +100,18 @@ class CustomerProfileView(generics.RetrieveUpdateAPIView):
     def update(self, request, *args, **kwargs):
         kwargs["partial"] = True
         return super().update(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if Customer.objects.filter(user=request.user).exists():
+            return Response(
+                {"message": CUSTOMER_PROFILE_EXISTS},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @CUSTOMER_DETAIL_SCHEMA

@@ -1,7 +1,7 @@
+from google.oauth2 import id_token
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from docs.user_views_docs import LOGIN_SCHEMA, USER_LIST_SCHEMA, USER_PROFILE_SCHEMA, UPDATE_PASSWORD_SCHEMA, \
-    USER_DETAIL_SCHEMA, REGISTER_USER_SCHEMA
+from docs.user_views_docs import *
 from car_app.serializers import *
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -11,8 +11,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
 from car_app.messages import *
+from google.auth.transport import requests as google_requests
+from car_rental.settings import GOOGLE_CLIENT_ID
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -47,55 +48,11 @@ class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['is_customer', 'is_owner']
+    filterset_fields = ['is_owner']
     search_fields = ['first_name', 'last_name', 'email', 'phone_number']
-    ordering_fields = ['is_customer', 'is_owner']
+    ordering_fields = ['is_owner']
 
 
-# @USER_PROFILE_SCHEMA
-# class UserProfileView(APIView):
-#     """
-#     User profile view for authenticated users.
-#     """
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request):
-#         try:
-#             user = request.user
-#             serializer = UserSerializer(user, many=False)
-#             return Response(serializer.data)
-#         except User.DoesNotExist:
-#             return Response({'message': USER_NOT_FOUND}, status=404)
-#
-#     def put(self, request):
-#         user = request.user
-#         data = request.data
-#         user.first_name = data.get('first_name', user.first_name)
-#         user.last_name = data.get('last_name', user.last_name)
-#         user.email = data.get('email', user.email)
-#         user.phone_number = data.get('phone_number', user.phone_number)
-#
-#         try:
-#             user.save()
-#         except Exception as e:
-#             if 'UNIQUE constraint failed: car_app_user.email' in str(e):
-#                 return Response({'message': EMAIL_ALREADY_REGISTERED}, status=400)
-#             elif 'UNIQUE constraint failed: car_app_user.phone_number' in str(e):
-#                 return Response({'message': PHONE_ALREADY_REGISTERED}, status=400)
-#             else:
-#                 return Response({'message': str(e)}, status=400)
-#
-#         serializer = UserSerializer(user, many=False)
-#         return Response(serializer.data, status=201)
-#
-#     def delete(self, request):
-#         user = request.user
-#         old_password = request.data.get('password')
-#         if not user.check_password(old_password):
-#             return Response({'message': INVALID_PASSWORD}, status=400)
-#         user.delete()
-#         return Response(status=204)
-#
 @USER_PROFILE_SCHEMA
 class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -176,13 +133,7 @@ class RegisterUser(APIView):
 
     def post(self, request):
         data = request.data
-        is_customer = data.get('is_customer', False)
         is_owner = data.get('is_owner', False)
-        if is_customer and is_owner:
-            return Response(
-                {'message': DUPLICATE_ROLE},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         try:
             user = User.objects.create_user(
                 first_name=data.get('first_name', ''),
@@ -190,7 +141,6 @@ class RegisterUser(APIView):
                 email=data.get('email', ''),
                 phone_number=data.get('phone_number', ''),
                 password=data.get('password', ''),
-                is_customer=is_customer,
                 is_owner=is_owner,
             )
         except IntegrityError as e:
@@ -215,3 +165,47 @@ class RegisterUser(APIView):
             )
         serializer = UserSerializer(user, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@GOOGLE_AUTH_SCHEMA
+class GoogleAuthView(APIView):
+    """
+    Handles Google OAuth2 authentication.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("id_token")
+        if not token:
+            return Response({"detail": "id_token is required"}, status=400)
+
+        try:
+            info = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                GOOGLE_CLIENT_ID,
+            )
+        except ValueError:
+            return Response({"detail": "Invalid token"}, status=400)
+
+        email = info.get("email")
+        first_name = info.get("given_name", "")
+        last_name = info.get("family_name", "")
+
+        if not email:
+            return Response({"detail": "Email scope missing"}, status=400)
+
+        user, _ = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "first_name": first_name,
+                "last_name": last_name,
+            },
+        )
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {"access": str(refresh.access_token), "refresh": str(refresh)},
+            status=status.HTTP_201_CREATED,
+        )
+

@@ -101,6 +101,26 @@ CUSTOMER_PROFILE_SCHEMA = extend_schema_view(
         },
         tags=["Customers"]
     ),
+    post=extend_schema(
+        summary="Create customer profile",
+        request=inline_serializer(
+            name="CreateCustomerProfile",
+            fields={
+                "date_of_birth": serializers.DateField(),
+                "licence_since": serializers.DateField(),
+                "licence_expiry_date": serializers.DateField(),
+                "address": serializers.CharField(),
+                "city": serializers.CharField(),
+                "country": serializers.CharField(),
+                "citizenship": serializers.CharField(),
+            },
+        ),
+        responses={
+            201: CustomerSerializer,
+            400: OpenApiResponse(description=CUSTOMER_PROFILE_EXISTS),
+        },
+        tags=["Customers"]
+    ),
 )
 
 CUSTOMER_DETAIL_SCHEMA = extend_schema(
