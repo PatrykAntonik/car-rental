@@ -6,7 +6,6 @@ from django.db.models.fields import CharField
 from phone_field import PhoneField
 from django.core.validators import MaxLengthValidator, MinLengthValidator, MinValueValidator, MaxValueValidator
 import datetime
-from django.db.models import Q
 
 
 def current_year():
