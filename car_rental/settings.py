@@ -16,7 +16,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     '0.0.0.0',
-    'car-rental-api.wonderfulriver-9fc08f05.polandcentral.azurecontainerapps.io'
+    'car-rental-api.salmonground-875e3968.polandcentral.azurecontainerapps.io'
 ]
 
 # ALLOWED_HOSTS = ["*"]

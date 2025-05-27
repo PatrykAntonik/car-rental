@@ -81,4 +81,30 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
   
+  
 
+  deploy:
+    name: "Deploy to Azure Container Apps"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load environment variables
+        run: |
+          printf '%s\n' "${{ secrets.ENV_FILE }}" >> $GITHUB_ENV
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          clientSecret: ${{ env.AZURE_CLIENT_SECRET }}
+
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: car-rental-group
+          containerAppName: car-rental-api
+          imageToDeploy: ${{ env.IMAGE_NAME }}:latest
+          registryUrl: docker.io
+          registryUsername: ${{ env.DOCKER_HUB_USERNAME }}
+          registryPassword: ${{ env.DOCKER_HUB_PASSWORD }}
