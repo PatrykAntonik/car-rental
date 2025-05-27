@@ -9,15 +9,19 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
-GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"],
-
-DEBUG = True
+GOOGLE_CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    '0.0.0.0'
+    '0.0.0.0',
+    'car-rental-api.wonderfulriver-9fc08f05.polandcentral.azurecontainerapps.io'
 ]
+
+# ALLOWED_HOSTS = ["*"]
+
+CORS_ALLOW_ALL_ORIGINS = False
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -167,7 +171,8 @@ STATIC_FILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
 AUTH_USER_MODEL = 'car_app.User'
