@@ -112,3 +112,4 @@ jobs:
           registryUrl: docker.io
           registryUsername: ${{ env.DOCKER_HUB_USERNAME }}
           registryPassword: ${{ env.DOCKER_HUB_PASSWORD }}
+
