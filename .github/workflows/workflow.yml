@@ -95,9 +95,13 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          client-id: ${{ env.AZURE_CLIENT_ID }}
-          tenant-id: ${{ env.AZURE_TENANT_ID }}
-          clientSecret: ${{ env.AZURE_CLIENT_SECRET }}
+          creds: >
+            {
+              "clientId": "${{ env.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ env.AZURE_CLIENT_SECRET }}",
+              "tenantId": "${{ env.AZURE_TENANT_ID }}",
+              "subscriptionId": "${{ env.AZURE_SUBSCRIPTION_ID }}"
+            }
 
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
