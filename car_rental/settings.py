@@ -143,6 +143,7 @@ WSGI_APPLICATION = 'car_rental.wsgi.application'
 # }
 
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
